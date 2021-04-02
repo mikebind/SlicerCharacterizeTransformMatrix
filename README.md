@@ -1,4 +1,4 @@
-# SlicerCharacterizeLinearTransform
+# SlicerCharacterizeTransformMatrix
 
 Have you ever looked at a 4x4 transformation matrix and tried to figure out what it was doing? All the information is in those 12 numbers, but not in an easily understood format. This project is a simple utility module for 3D Slicer ([slicer.org](slicer.org)) which tries to quickly give you any information you might want to know about what a transformation matrix is doing.  For example, is it a rigid transformation or is there scaling?  If there is scaling, what are the scale factors and stretch directions?  Is there rotation?  If so, what is the axis of rotation and how much rotation occurs around that axis?  Alternatively, if we break down the rotation into a sequence of rotations around coordinate axes, what is the rotation about each axis?
 
