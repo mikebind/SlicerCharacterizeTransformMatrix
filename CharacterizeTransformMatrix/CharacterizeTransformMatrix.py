@@ -157,6 +157,7 @@ class CharacterizeTransformMatrixWidget(ScriptedLoadableModuleWidget, VTKObserva
       return
     elif not transformNode.IsLinear():
       self.ui.transformDescriptionTextEdit.setPlainText("Selected transform is composite or not linear")
+      return
     # Otherwise, transform node exists and is linear
     results = self.logic.characterizeLinearTransformNode(transformNode)
     resultsText = results.textResults
@@ -241,30 +242,38 @@ class CharacterizeTransformMatrixLogic(ScriptedLoadableModuleLogic):
     r = scipy.spatial.transform.Rotation.from_matrix(R[:3,:3])
     #
     # What is rotation axis and rotation angle about that axis?
-    rv = r.as_rotvec()
+    rv = r.as_rotvec() # the conversion ensures angle is >=0 and <=pi, axis is inverted as needed to make this true
     rotation_angle_deg = 180/np.pi*np.linalg.norm(rv) # length of rotvec is rotation angle in radians
-    # The sign of the angle is positive if the rotation is counter-clockwise when you are looking in 
-    # the direction of the rotation axis vector, and negative if the rotation is clockwise. That is,
-    # if you point your left thumb in the direction of the rotation axis, your fingers will curl in the
-    # positive rotation angle direction.
-    rotation_axis = rv/np.linalg.norm(rv) # unit vector version of rotation axis
-    #
-    line = 'The rotation matrix portion of this transformation rotates %0.1f degrees %s (if you look in the direction the vector points) around a vector which points to [%0.2f, %0.2f, %0.2f] (RAS)' % (np.abs(rotation_angle_deg), 'ccw' if rotation_angle_deg>=0 else 'cw', *rotation_axis)
     textResults.append(line)
-    if verbose:
-      print(line)
-    #
-    # What is the best way to understand these as a sequence of rotations around coordinate axes?
-    euler_angles_xyz = r.as_euler('xyz',degrees=True)
-    # The results are the rotation angles about the positive x axis, then y, then z (in that order,
-    # and without the axes moving with the volume ("extrinsic" axes, not "intrinsic"))
-    # Same as above, positive angles mean ccw rotation if looking in the positive direction along the
-    # axis.  
-    Rrot,Arot,Srot = euler_angles_xyz
-    line = 'Broken down into a series of rotations around axes, the rotation matrix portion of the transformation rotates \n  %0.1f degrees %s around the positive R axis, then \n  %0.1f degrees %s around the positive A axis, then \n  %0.1f degrees %s around the positive S axis' % (np.abs(Rrot), 'ccw' if Rrot>=0 else 'cw', np.abs(Arot), 'ccw' if Arot>=0 else 'cw', np.abs(Srot), 'ccw' if Srot>=0 else 'cw')
-    textResults.append(line)
-    if verbose:
-      print(line)
+      if verbose:
+        print(line)
+    if rotation_angle_deg < 1e-4 :
+      # No rotation!
+      line = 'There is essentially no rotation (rotation angle < 1e-4 degrees).'
+    else:
+      # There is rotation
+      # If you look in the direction of the rotation axis vector, positive angles mean counter-clockwise rotation.
+      # (as_rotvec() always returns non-negative angles, the rotation axis is inverted as necessary)
+      # If you point your LEFT thumb in the direction of the rotation axis, your fingers curl in the positive rotation direction
+      rotation_axis = rv/np.linalg.norm(rv) # unit vector version of rotation axis
+      #
+      line = 'The rotation matrix portion of this transformation rotates %0.1f degrees %s (if you look in the direction the vector points) around a vector which points to [%0.2f, %0.2f, %0.2f] (RAS)' % (np.abs(rotation_angle_deg), 'ccw' if rotation_angle_deg>=0 else 'cw', *rotation_axis)
+      textResults.append(line)
+      if verbose:
+        print(line)
+      #
+      # What is the best way to understand these as a sequence of rotations around coordinate axes?
+      euler_angles_xyz = r.as_euler('xyz',degrees=True)
+      # The results are the rotation angles about the positive x axis, then y, then z (in that order,
+      # and without the axes moving with the volume ("extrinsic" axes, not "intrinsic"))
+      # Same as above, positive angles mean ccw rotation if looking in the positive direction along the
+      # axis.  
+      Rrot,Arot,Srot = euler_angles_xyz
+      line = 'Broken down into a series of rotations around axes, the rotation matrix portion of the transformation rotates \n  %0.1f degrees %s around the positive R axis, then \n  %0.1f degrees %s around the positive A axis, then \n  %0.1f degrees %s around the positive S axis' % (np.abs(Rrot), 'ccw' if Rrot>=0 else 'cw', np.abs(Arot), 'ccw' if Arot>=0 else 'cw', np.abs(Srot), 'ccw' if Srot>=0 else 'cw')
+      textResults.append(line)
+      if verbose:
+        print(line)
+        
     #### Translation
     translationVector = T[:3,3]
     line = 'Lastly, this transformation translates, shifting:\n  %+0.1f mm in the R direction\n  %+0.1f mm in the A direction\n  %+0.1f mm in the S direction' %(*translationVector,)
