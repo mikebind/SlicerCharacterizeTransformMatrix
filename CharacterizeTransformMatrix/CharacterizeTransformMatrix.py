@@ -244,12 +244,12 @@ class CharacterizeTransformMatrixLogic(ScriptedLoadableModuleLogic):
     # What is rotation axis and rotation angle about that axis?
     rv = r.as_rotvec() # the conversion ensures angle is >=0 and <=pi, axis is inverted as needed to make this true
     rotation_angle_deg = 180/np.pi*np.linalg.norm(rv) # length of rotvec is rotation angle in radians
-    textResults.append(line)
-      if verbose:
-        print(line)
     if rotation_angle_deg < 1e-4 :
       # No rotation!
       line = 'There is essentially no rotation (rotation angle < 1e-4 degrees).'
+      textResults.append(line)
+      if verbose:
+        print(line)
     else:
       # There is rotation
       # If you look in the direction of the rotation axis vector, positive angles mean counter-clockwise rotation.
